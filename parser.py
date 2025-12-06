@@ -49,11 +49,48 @@ def parse_any(data, i):
     else:
         raise ValueError(f"Invalid bencode data at index {i}: {chr(data[i])}")
 def bdecode():
+    if isinstance(data, str):
+        raise ValueError("input must be a byte string")
 
+    if not data:
+        raise ValueError("Empty input")
 
+    result, index = parse_any(data,0)
+    if index < len(data):
+        raise ValueError("extra data after passing at index {index}")
+    return result
 
 def bencode():
+    if isinstance(data, int):
+        return b'i'+str(data).encode()+b'e'
+    elif isinstance(data, bytes):
+        return str(len(data)).encode()+ b':'+ data
+    elif  isinstance(data, str):
+        data = data.encode*('utf-8')
+        return str(len(data)).encode()+b':'+ data
+    elif isinstance(data, list):
+       result = [b'l']
+       for item in data:
+        result.append(bencode(item))
+        result.append(b'e')
+        retuurn b''.join(result)
+
+    elif isinstance(data, dict):
+        result = [b'd']
+        for key in sorted(data.keys()):
+            if not isinstance(key, (str, bytes)):
+                key = key.encode('utf-8')
+                result.append(bencode(key))
+                result.append(bencode(data[key]))
+            result.append(b'e')
+            return b''.join(result)
+    else:
+        raise ValueError(f"Unsupported  type for bencoding : {type(data)}")
 
 
+with open('test.torrent', 'rb') as f:
+   torrent_data = f.read()
 
 
+decoded = bdecode(torrent_data)
+pprint.pprint(decoded[b'info'])
