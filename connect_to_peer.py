@@ -260,3 +260,26 @@ def download_from_peers(torrent_file_path,peers, output_file):
                     current_piece_length =  total_length - (piece_idx*piece_length)
                 else:
                     current_piece_length = piece_length
+
+
+            piece_hash = pieces_hash[piece_idx*20:(piece_idx+1)*20]
+            piece_data = download_piece(peer,piece_idx, current_piece_length,piece_hash)
+
+            if piece_data:
+                downloaded_pieces[piece_idx] = piece_data
+                print(f"Progress:{sum(1 for p in downloaded_pieces if p is not None)}/{num_pieces}pieces")
+                peer.close()
+
+            if all(p is not None for p in downloaded_pieces):
+                print("\ndownload complete!")
+                break
+
+            if all(p is not None for p in downloaded_pieces):
+                    with open(output_file, 'wb') as f:
+                        for piece in downloaded_pieces:
+                            f.write(piece)
+                        print(f"file saved to {output_file}")
+            else:
+                print(f"download incomplete : {sum(1 for p in  downloaded_pieces if p is  not None)}/{num_pieces} pieces")
+
+from get_peers import get_peers_from_tracker
