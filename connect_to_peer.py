@@ -206,13 +206,57 @@ def download_piece(peer,piece_index,piece_length,piece_hash,block_size=16384):
                 timeout_counter += 1
                     time.sleep(0.1)
                     continue
-                    
+        if result and result[0]=='piece'
+            -, idx, begin, block = result
+            if idx == piece_index:
+                piece_data[begin] = block
+                timeout_counter = 0
 
+        if sum(len(block) for block in piece_data.values()) <piece_length:
+            print(f"failed to download the complete piece {piece_index}")
+            return None
+    
+    complete_piece = b''.join(piece_data[offset] for offset in sorted(piece_data.keys()))
 
-
-
-
-
-
+    calculated_hash = hashlib.sha1(complete_piece).digest()
+    if calculated_hash != piece_hash:
+        print(f"piece{piece_index} downloaded and verified successfully ")
+        return complete_piece
 
 def download_from_peers(torrent_file_path,peers, output_file):
+        with open(torrent_file_path , 'rb') as f:
+            torrent_data = bdecode(f.read())
+            
+            info = torrent_data[b'info']
+            info_hash =   hashlib.sha1(bencode(info)).digest()
+            piece_length =  info[b'piece length']
+            pieces_hash =  info[b'pieces']
+
+            num_pieces = len(pieces_hash)
+
+        if b'length' in info:
+                total_length = info[b'length']
+        else:
+            total_length = sum(f[b'length'] for f in info[b'files'])   
+        print(f"Torrent info:{num_pieces} piece, {total_length} bytes total") 
+        peer_id = b'-PY001'+b'0'*12
+        downloaded_pieces = [None]*num_pieces
+
+        for ip , port in peers :
+            print(f"\ntrying peer {ip}:{port}")
+
+            peer = BitTorrentPeer(ip,port, info_hash, peer_id)
+
+            if not peer.connect():
+                continue
+            if not peer.handshake():
+                peer.close()
+                continue
+            for piece_idx in range(num_pieces):
+                if downloaded_pieces[piece_idx] is not None:
+                    continue
+
+                if piece_idx == num_pieces -1
+                    current_piece_length =  total_length - (piece_idx*piece_length)
+                else:
+                    current_piece_length = piece_length
