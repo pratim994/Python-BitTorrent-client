@@ -84,5 +84,78 @@ def send_request(self, piece_index, begin,length):
     msg = struct.pack(  ">IBII", 13,6, piece_index, begin, length)
     self.socket.send(msg)
     print(f"send requested piece {piece_index}, offset{begin}, length {length}")
-    
 
+
+def recieve_message(self):
+    try:
+        length_data = self._recv_exact(4)
+        length = struct.unpack(">I", length_data)
+
+        if length == 0:
+            return None, None
+        
+
+        msg_id_data = self._recv_exact(1)
+        msg_id = struct.unpack("B", msg_id_data)[0]
+
+        payload = b''
+        if length >1:
+            payload =  self._recv_exact(length-1)
+        return msg_id, payload
+    except socket.timeout:
+        return None, None
+    except Exception as e:
+        print(f"error recieving message :{e}")
+        return None, None
+
+def handle_msg(self,mag_id, payload):
+        if msg_id is None:
+            return None
+
+        elif msg_id == 0:
+            self.peer_choking = True
+            print(f"peer {self.ip}:{self.port}:choked us")
+
+        elif msg_id == 1:
+            self.peer_choking = False
+            print(f"peer {self.ip}:{self.port}: unchoked us")
+
+        elif msg_id == 2:
+            self.peer_interested = True
+
+        
+        elif msg_id == 3:
+            self.peer_interested = False
+        
+        elif msg_id == 4:
+            piece_index =  struct.unpack(">I", payload)[0]
+            print(f"peer has piece {piece_index}")
+
+        elif msg_id == 5:
+            self.bitfield = payload 
+            print(f"bitfield recieved from {self.ip}:{self.port} ({len(payload)}bytes)")
+
+        elif msg_id == 7:
+            index = struct.unpack(">I", payload[0:4])[0]
+            begin = struct.unpack(">I", payload[4:8])[0]
+            block = payload[8:]
+            print(f"Recieved piece {index}, offset{block}, {len(block)}bytes")
+            return('piece', index, begin, block)
+  return None
+
+
+ def has_piece(self,piece_index):
+        if self.bitfield is None:
+            return False
+
+        byte_index =  piece_index
+        bit_index = 7-(piec_index % 8)
+        if byte_index >= len(self.bitfield):
+                return False
+        return bool((self.bitfield[byte_index]>>bit_index)&1)
+
+
+def close(self):
+    if self.socket:
+        self.socket.close()
+        
