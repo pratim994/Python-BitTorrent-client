@@ -158,4 +158,61 @@ def handle_msg(self,mag_id, payload):
 def close(self):
     if self.socket:
         self.socket.close()
+
+
+def download_piece(peer,piece_index,piece_length,piece_hash,block_size=16384):
+    piece_data = {}
+    max_attempts = 50
+
+    for _in range(max_attempts):
+        msg_id, payload = peer.recieve_message()
+        if msg_id is not None:
+            result = peer.handle_messsage(msg_id, payload)
+            if result and result[0] == 'piece':
+                -,idx, begin,block = result
+                if idx == piece_index:
+                    piece_data[begin] = block
+
+        if not peer.has_piece(piece_index):
+            print(f"piece doesn't exist saar {piece_index}")
+            return None
         
+        if not peer.interested:
+                peer.send_interested()
+
+
+        while peer.peer_choking:
+            msg_id, payload  = peer.recieve_message()
+            if msg_id is not None:
+                peer.handle_message(msg_id, payload)
+            time.sleep(0.1)
+
+        print(f"Downloading piece {piece_index}({piece_length}, bytes)")
+
+        for begin in range( 0, piece_length, block_size):
+            length = min(block_size,piece_length-begin)
+            peer.send_request(piece_index,begin,length)
+        
+
+        piece_data = {}
+        timeout_counter = 0
+        max_timeout = 100
+
+        while len(piece_data)*block_size < piece_length and timeout_counter <max_timeout :
+            msg_id , payload = peer.recieve_message()
+
+
+            if msg_id is None:
+                timeout_counter += 1
+                    time.sleep(0.1)
+                    continue
+                    
+
+
+
+
+
+
+
+
+def download_from_peers(torrent_file_path,peers, output_file):
