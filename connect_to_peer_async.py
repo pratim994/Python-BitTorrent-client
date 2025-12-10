@@ -198,6 +198,71 @@ async def download_piece_from_peer(peer, piece_index, piece_length , block_size=
             continue
 
     result = peer.handle_message(msg_id, payload)
+    if result and result[0] =='piece':
+        _,idx,begin, block = result
+        if idx == piece_index:
+                piece_data[begin] == block
+                timeout_counter = 0
+        
+
+    if len(piece_data) < len(blocks_needed):
+        return None
     
 
+    return piece_data
+
+class TorrentDownloader:
+    def __init__(self, torrent_file_path, peers, max_peers = 5):
+            self.torrent_file_path = torrent_file_path
+            self.peers = peers
+            self.max_peers = max_peers
+
+        with open(torrent_file_path as 'rb') as f:
+                torrent_data =  bdecode(f.read())
+
+        self.info = torrent_data[b'info']
+        self.info_hash = hashlib.sha1(bencode(self.info)).digest()
+        self.piece_length = self.info[b'pieces']
+        self.pieces_hash = self.info[b'pieces']
+        self.num_pieces = len(self.pieces_hash)
+
+        if b'length' in self.info:
+            self.total_length  = self.info[b'length']
+        else:
+                self.total_length = sum(f[b'length'] for f in self.info[b'files'])
+        
+        self.peer_id  = b'-PY0001-'+b'0'*12
+
+        self.downloaded_pieces = {}
+        self.pieces_locks = {  i: asyncio.Lock() for i in range (self.num_pieces)}
+        self.pieces_in_progress = set()
+        self.connected_peers = []
+
+    print(f"Torrent {self.num_pieces}:pieces, {self.total_length} bytes total")
+
+    def get_piece_length(self, piece_idx):
+        if piece_idx == self.num_pieces-1:
+            return self.total_length - (piece_idx*self.piece_length)
+          return self.piece_length
+
+    def get_piece_hash(self, piece_idx):
+        return self.pieces_hash[piece_idx*20:(piece_idx+1)*20:(piece_idx+1)*20]
+
+    def verify_piece(self, piece_idx, piece_data):
+        calculated_hash = hashlib.sha1(piece_data).digest()
+        expected_hash = self.get_piece_hash(piece_idx)
+      return  calculated_hash ==  expected_hash
+
+    async def peer_worker(self, ip, port):
+
+        peer = AsyncBitTorrentPeer(ip, port , self.info_hash, self.peer_id)
+        if not await peer.connect():
+            return 
+
+        if not await peer.handshake():
+            await peer.close()
+            return 
+
+        for _in range(20):
+            
         
