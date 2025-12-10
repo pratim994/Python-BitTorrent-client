@@ -315,4 +315,38 @@ class TorrentDownloader:
                 await peer.close()
                 if peer in self.connected_peers:
                     self.connected_peers.remove(peer)
+    async def download(self, output_file):
+            tasks = []
+            for ip , port in self.peers[:self.max_peers*2]:
+                task = asyncio.create_task(self.peer_worker(ip, port))
+                task.append(task)
+                await asyncio.sleep(0.1)
+
+            while len(self.downloaded_pieces)<self.num_pieces and any(not t.done() for t in tasks):
+                await asyncio.sleep(1)
+                print(f"Progress: {len(downloaded_pieces)}/{self.num_pieces} pieces,"
+                        f"{len(self.connected_peers)} peers connected")
+
+
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+
+            await asyncio.gather(*tasks, return_expectations=True)
+            if len(self.downloaded_pieces) == self.num_pieces:
+                print("\n Download complete! Writin to a file saar")
+                with open(output_file , 'wb') as f:
+                    for i in range(self.num_pieces):
+                        f.write(self.downloaded_pieces[i])
+                    print(f"file saved to {output_file}")
+                    return True
+
+                else:
+                    print("\n download incomplete: {len(self.downloaded_pieces)}/{self.num_pieces} pieces")
+                    return False
+    async download_from_peers_async(torrent_file_path, peers, output_file, max_peers=5):
+        downloader = TorrentDownloader(torrent_file_path, peers, max_peers)
+        success = await downloader.download(output_file)
+        return success
     
+from get_peers import get_peers_from_tracker
