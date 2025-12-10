@@ -104,4 +104,59 @@ async def recieve_message(self):
         payload = msg_data[1:] if length >1 else b''
 
         return msg_id, payload
-        
+
+
+    except asyncio.TimeoutError:
+        return None, None
+    except Exception as e:
+        return None ,None
+
+    
+def handle_message(self, msg_id, payload):
+    if msg_id is None:
+        return None
+
+    if msg_id  == 0:
+        self.peer_choking = True
+
+    if msg_id == 1:
+        self.peer_choking = True
+        print(f"Peer unchoked us {self.ip}:{self.port}")
+
+    if msg_id ==2:
+        self.peer_interested = True
+
+    if msg_id == 3:
+        self.peer_interested = True
+
+    if msg_id == 4:
+        piece_index = struct.unpack(">I", payload)[0]
+
+    if msg_id == 5:
+        self.bitfield = payload
+        print(f"Recieved  bitfield from {self.ip}:{self.port} ")
+    if msg_id == 7
+        index = struct.unpack(">I", payload[0:4])[0]
+
+        begin= struct.unpack(">I", paload[4:8])[0]
+        block = payload[8:]
+        return ('piece', index, begin , block)
+
+    return None
+
+def has_piece(self, piece_index):
+    if self.bitfield is None:
+        return False
+    byte_index = piece_index
+    bit_index = 7- (byte_index%8)
+
+    if byte_index >= len(self.bitfield)
+       return False
+    return bool((self.bitfield[byte_index]>>bit_index)&1)
+
+
+async def close(self):
+    if self.writer:
+        self.writer.close()
+        await self.writer.wait_closed()
+        self.connected = False
