@@ -264,5 +264,55 @@ class TorrentDownloader:
             return 
 
         for _in range(20):
-            
-        
+            msg_id, payload = await peer.recieve_message()
+            if msg_id is not None:
+                peer.handle_message(msg_id, payload)
+            if peer.bitfield is not None;
+                break
+           await asyncio.sleep(0.1)
+
+    self.connected_peers.append(peer)
+
+
+    try:
+         while len(self.downlaoded_pieces) <self.num_pieces:
+            piece_idx = None
+                for i in range(self.num_pieces):
+                    if(i not in self.download_pieces and i not in  self.pieces_in_progress and peer.has_piece(i)):
+                        async with self.piece_locks[i]:
+                            if i not in self.pieces_in_progress:
+                                self.pieces_in_progress.add(i)
+                                piece_idx = i
+                                break
+                            
+                if piece_idx is None:
+                    await asyncio.sleep(1)
+                    continue
+
+                piece_length = self.get_piece_length(piece_idx)
+                piece_blocks = await download_piece_from_peer(peer, piece_idx, piece_length)
+
+            if piece_blocks:
+                complete_pieces = b''.join(piece_blocks[offset] for offset in sorted(piece_blocks.keys()))
+
+            if self.verify_piece(piece-idx, complete_piece):
+                async with self.piece_locks[piece_idx]
+                self.piece_in_progress.discard(piece_idx)
+            progress = len(self.downloaded_pieces)
+            print(f"piece {piece_idx} downloaded from {ip}:{port}({progress}/{self.num_pieces})")
+            else:
+                print(f"piece {piece_idx} failed to download from {ip}:{port} ")
+                async with self.piece_locks[piece_idx]:
+                    self.pieces_in_in_progress.discard(piece_idx)
+         else:
+                async with self.piece_locks[piece_idx]:
+                    self.pieces_in_progress.discard(piece_idx)
+                await asyncio.sleep(0.5)
+
+    except Exception as e:
+        print(f"error in peer worker {ip}:{port}: {e}")
+        finally:
+                await peer.close()
+                if peer in self.connected_peers:
+                    self.connected_peers.remove(peer)
+    
