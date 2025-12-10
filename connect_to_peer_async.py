@@ -50,3 +50,58 @@ class AysncBitPeer:
                     self.reader.readexactly(68),
                     timeout = self.timeout
                 )
+
+                resp_pstrlen = response[0]
+                resp_pstr = response[1:20]
+                resp_info_hash = response[28:48]
+
+                if resp_pstrlen != 19 or resp_pstr != pstr:
+                    print(f"Invalid hansdshake from {self.ip}:{self.port}")
+                    return False
+
+                if resp_info_hahs != self.info_hash :
+                    print(f"Info hash mismatch from {self.ip}:{self.port}")
+                    return False
+
+
+                print(f"handshake successfull with {self.ip}:{self.port}")
+                return True
+
+            except Exception as e:
+                print(f"Handshake failed with {self.ip}:{self.port}-{e}")
+                return False
+
+async def send_interested(self):
+    msg = struct.pack(">IB", 1, 2)
+    self.writer.write(msg)
+    await self.writer.drain()
+    self.interested = True
+
+
+async def send_requested(self, piece_index, begin, length):
+        msg = struct.pack(">IBIII", 13,6, piece_index, begin, length)
+        self.writer.write(msg)
+        await self.writer.drain()
+
+
+
+async def recieve_message(self): 
+    try:
+        length_data = await asyncio.wait_for(
+            self.reader.readexactly(4),
+            timeout = self.timeout
+        )
+        length = struct.unpack("I", length_data)[0]
+        if length == 0:
+            return None,None
+
+
+        msg_data = await asyncio.wait_for(
+            self.reader.readexactly(length),
+            timeout = self.timeout
+        )
+        msg_id = msg_data[0]
+        payload = msg_data[1:] if length >1 else b''
+
+        return msg_id, payload
+        
