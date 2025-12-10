@@ -159,4 +159,45 @@ async def close(self):
     if self.writer:
         self.writer.close()
         await self.writer.wait_closed()
-        self.connected = False
+   self.connected = False
+
+
+async def download_piece_from_peer(peer, piece_index, piece_length , block_size=16384):
+     if not peer.has_piece(piece_index):
+        return None
+
+    if not peer.interested():
+        await peer.send_interested()
+
+
+    wait_time = 0
+    while peer.peer_choking and wait_time < 5:
+        msg_id, payload = await peer.recieve_message()
+    await asyncio.sleep(0.1)
+    wait_time += 0.1
+
+    if peer.peer_choking:
+        return None
+
+    blocks_needed = []
+    for begin in range(0,piece_length, block_size):
+        length = min(block_size,piece_length - begin)
+        blocks_needed.append(begin, length)
+        await peer.send_request(piece_index, begin, length)
+    
+    piece_data = {}
+    timeout_counter = 0
+    max_timeout = 100
+
+    while len(piece_data)< len(blocks_needed) and timeout_counter < max_timeout:
+        msg_id, payload = await peer.recieve_message()
+
+        if msg_id is None:
+            timeout_counter += 1
+            await asyncio.sleep(0.1)
+            continue
+
+    result = peer.handle_message(msg_id, payload)
+    
+
+        
